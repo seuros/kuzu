@@ -494,6 +494,13 @@ jobs:
       isNightly: ${{ github.event_name == 'schedule' || github.event.inputs.isNightly == 'true' }}
     secrets: inherit
 
+  build-precompiled-bin-freebsd:
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.skipBinaries != 'true' }}
+    uses: ./.github/workflows/freebsd-precompiled-bin-workflow.yml
+    with:
+      isNightly: ${{ github.event_name == 'schedule' || github.event.inputs.isNightly == 'true' }}
+    secrets: inherit
+
   build-precompiled-bin-windows:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.skipBinaries != 'true' }}
     uses: ./.github/workflows/windows-precompiled-bin-workflow.yml

@@ -1,0 +1,67 @@
+name: Build FreeBSD Precompiled Binaries
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      isNightly:
+        type: boolean
+        required: true
+        default: false
+
+env:
+  PIP_BREAK_SYSTEM_PACKAGES: 1
+
+jobs:
+  build-precompiled-bin-freebsd-amd64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update nightly version
+        if: ${{ inputs.isNightly == true }}
+        run: |
+          python3 -m pip install packaging
+          python3 update-nightly-build-version.py
+        working-directory: scripts
+
+      - name: Build FreeBSD Binaries
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          mem: 8192
+          prepare: |
+            set -e
+            pkg update -f
+            pkg install -y cmake gmake
+          run: |
+            set -e
+            # Build
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF -DBUILD_EXAMPLES=OFF
+            cmake --build build --parallel 2
+            cmake --install build
+            
+            # Collect artifacts - FreeBSD uses .so for shared libraries
+            mv install/include/kuzu.h .
+            mv install/include/kuzu.hpp .
+            # Handle both lib and lib64 directories
+            if [ -f install/lib64/libkuzu.so ]; then
+              mv install/lib64/libkuzu.so .
+            else
+              mv install/lib/libkuzu.so .
+            fi
+            mv install/bin/kuzu .
+            
+            # Create tarballs
+            tar -czvf libkuzu-freebsd-amd64.tar.gz kuzu.h kuzu.hpp libkuzu.so
+            tar -czvf kuzu_cli-freebsd-amd64.tar.gz kuzu
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libkuzu-freebsd-amd64
+          path: libkuzu-freebsd-amd64.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kuzu_cli-freebsd-amd64
+          path: kuzu_cli-freebsd-amd64.tar.gz
