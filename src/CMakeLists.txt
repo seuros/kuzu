@@ -28,7 +28,14 @@ if (NOT __SINGLE_THREADED__)
         set(KUZU_LIBRARIES ${KUZU_LIBRARIES} Threads::Threads)
 endif()
 if(NOT WIN32)
-        set(KUZU_LIBRARIES dl ${KUZU_LIBRARIES})
+        # FreeBSD has dlopen in libc, not in a separate libdl
+        if(NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+                set(KUZU_LIBRARIES dl ${KUZU_LIBRARIES})
+        endif()
+endif()
+# FreeBSD specific libraries
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        set(KUZU_LIBRARIES execinfo ${KUZU_LIBRARIES})
 endif()
 # Seems to be needed for clang on linux only
 # for compiling std::atomic<T>::compare_exchange_weak

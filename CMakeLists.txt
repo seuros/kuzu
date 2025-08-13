@@ -20,6 +20,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(CMAKE_FIND_PACKAGE_RESOLVE_SYMLINKS TRUE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+
+# FreeBSD-specific: Help CMake find libraries installed via pkg
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    list(PREPEND CMAKE_PREFIX_PATH "/usr/local")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+    set(CMAKE_INSTALL_RPATH "/usr/local/lib")
+endif()
 # On Linux, symbols in executables are not accessible by loaded shared libraries (e.g. via dlopen(3)). However, we need to export public symbols in executables so that extensions can access public symbols. This enables that behaviour.
 set(CMAKE_ENABLE_EXPORTS TRUE)
 
@@ -51,8 +59,11 @@ endif()
 if(WIN32)
   set(OS_NAME "windows")
 endif()
-if(UNIX AND NOT APPLE)
-  set(OS_NAME "linux") # sorry BSD
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(OS_NAME "freebsd")
+  message(STATUS "FreeBSD detected")
+elseif(UNIX AND NOT APPLE)
+  set(OS_NAME "linux")
 endif()
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
